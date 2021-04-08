@@ -45,9 +45,9 @@ class CelebDataset(Dataset):
 
     def __getitem__(self, index):
         if self.mode == 'train':
-            image = Image.open(os.path.join(self.image_path, self.train_filenames[index]))
+            image = Image.open(os.path.join(self.image_path, self.train_filenames[index])).convert('RGB')
         elif self.mode in ['test']:
-            image = Image.open(os.path.join(self.image_path, self.test_filenames[index]))
+            image = Image.open(os.path.join(self.image_path, self.test_filenames[index])).convert('RGB')
         # self.check_size(image, index)
         return self.transform(image)
 
