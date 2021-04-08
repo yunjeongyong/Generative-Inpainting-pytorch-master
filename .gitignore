@@ -1,6 +1,6 @@
 __pycache__
 notebook.tex
 *.ipynb
-data/
+#data/
 models/
 samples/
