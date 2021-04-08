@@ -13,7 +13,9 @@ parser = argparse.ArgumentParser(description='')
 
 #Image setting
 image_size = 128
-mask_size = int(image_size/2)
+image_size_height = 512
+image_size_width = 680
+# mask_size = int(image_size/2)
 
 parser.add_argument('--GPU', type=int, default=0)
 parser.add_argument('--CROP_SIZE', type=int, default=image_size+128) # 178
@@ -61,9 +63,9 @@ parser.add_argument('--SAMPLE_STEP', type=int, default=400)
 parser.add_argument('--MODEL_SAVE_STEP', type=int, default=400)
 
 # etc
-parser.add_argument('--IMG_SHAPE', type=list, default=[image_size,image_size,3])
-parser.add_argument('--MASK_HEIGHT', type=int, default=mask_size)
-parser.add_argument('--MASK_WIDTH', type=int, default=mask_size)
+parser.add_argument('--IMG_SHAPE', type=list, default=[image_size_height,image_size_width,3])
+parser.add_argument('--MASK_HEIGHT', type=int, default=512)
+parser.add_argument('--MASK_WIDTH', type=int, default=680)
 parser.add_argument('--VERTICAL_MARGIN', type=int, default=0)
 parser.add_argument('--HORIZONTAL_MARGIN', type=int, default=0)
 parser.add_argument('--MAX_DELTA_HEIGHT', type=int, default=int(image_size/8))

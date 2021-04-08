@@ -15,7 +15,7 @@ class CelebDataset(Dataset):
         self.mode = mode
         self.lines = open(metadata_path, 'r').readlines()
         self.num_data = int(self.lines[0])
-        self.crop_size = crop_size
+        # self.crop_size = crop_size
 
         print ('Start preprocessing dataset..!')
         random.seed(1234)
@@ -38,7 +38,7 @@ class CelebDataset(Dataset):
             splits = line.split()
             filename = splits[0]
 
-            if (i+1) < 20000:
+            if (i+1) < 6128:
                 self.test_filenames.append(filename)
             else:
                 self.train_filenames.append(filename)
@@ -58,21 +58,25 @@ class CelebDataset(Dataset):
 def get_loader(image_path, metadata_path, crop_size, image_size, batch_size, dataset='CelebA', mode='train'):
     """Build and return data loader."""
 
-    if mode == 'train':
-        transform = transforms.Compose([
-            transforms.CenterCrop(crop_size),
-            transforms.Resize(image_size, interpolation=Image.ANTIALIAS),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-            ])
-    else:
-        transform = transforms.Compose([
-            transforms.CenterCrop(crop_size),
-            transforms.Scale(image_size, interpolation=Image.ANTIALIAS),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-            ])
+    # if mode == 'train':
+    #     transform = transforms.Compose([
+    #         transforms.CenterCrop(crop_size),
+    #         transforms.Resize(image_size, interpolation=Image.ANTIALIAS),
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #         # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    #         ])
+    # else:
+    #     transform = transforms.Compose([
+    #         transforms.CenterCrop(crop_size),
+    #         transforms.Scale(image_size, interpolation=Image.ANTIALIAS),
+    #         transforms.ToTensor(),
+    #         # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    #         ])
+    
+    transform = transforms.Compose([
+        transforms.ToTensor()
+    ])
 
     if dataset == 'CelebA':
         dataset = CelebDataset(image_path, metadata_path, transform, mode, crop_size)
