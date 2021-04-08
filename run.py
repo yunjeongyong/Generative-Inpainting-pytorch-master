@@ -214,7 +214,7 @@ class Run(object):
                     print('reconstruction loss: ', self.loss['recon'].data[0])
                     print('ae loss: ', self.loss['ae_loss'].data[0][0])
                     print('g loss: ', self.loss['g_loss'].data[0])
-                    print('d loss: ', self.loss['d_loss'].data[0])
+                    print('d loss: ', self.loss['d_loss'].item())
                     show_image(real_image, (masked_image+binary_mask), stage_1, stage_2, fake_image, offset_flow)
 
                 # Save model checkpoints
