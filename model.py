@@ -42,7 +42,7 @@ class CoarseNet(nn.Module):
 
     def forward(self, x, mask):
         x = self.down(x)
-        resized_mask = down_sample(mask, scale_factor=1, mode='nearest')
+        resized_mask = down_sample(mask, scale_factor=0.25, mode='nearest')
         x = self.atrous(x)
         x = self.up(x)
         return x, resized_mask
