@@ -1,6 +1,7 @@
 import torch
 import os
 import random
+import numpy as np
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -76,7 +77,7 @@ def get_loader(image_path, metadata_path, crop_size, image_size, batch_size, dat
     
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
     if dataset == 'CelebA':
