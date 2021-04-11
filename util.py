@@ -84,9 +84,8 @@ class Util(object):
                     a3 = np.random.randint(3, 180)
                     thickness = np.random.randint(4, max_width)
                     cv.ellipse(mask, (x1, y1), (s1, s2), a1, a2, a3, (1, 1, 1), thickness)
-            mask4d = np.zeros((1, 1, 1, 1))
-            mask4d[2] = mask[0]
-            mask4d[3] = mask[1]
+            mask4d = np.zeros((1, 1, 1, 1), np.float32)
+            mask4d[0][0] = mask
             return mask4d
 
         img_shape = self.args.IMG_SHAPE
