@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='')
 image_size = 512
 image_size_height = 512
 image_size_width = 680
-mask_size_height = int(image_size_height/4)
+mask_size_height = int(image_size_height/5)
 mask_size_width = int(image_size_width/4)
 
 parser.add_argument('--GPU', type=int, default=0)
