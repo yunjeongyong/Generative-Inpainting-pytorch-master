@@ -57,7 +57,7 @@ class Util(object):
         #     return mask
 
         def npmask(h, w):
-            max_width = 680
+            max_width = 340
             if h > 512 or w > 680:
                 raise Exception("width and height of mask be at least 680x512!")
             np.random.seed(1)  ## maskseed = 22, 100 for test
