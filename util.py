@@ -137,7 +137,7 @@ class Discounted_L1(nn.Module):
                 return d
             return torch.mean(d) if size_average else torch.sum(d)
         else:
-            return lambd_optimized(input, target, size_average, reduce)
+            return lambd_optimized(input, target)
 
 
 def spatial_discounting_mask(mask_width, mask_height, discounting_gamma):
