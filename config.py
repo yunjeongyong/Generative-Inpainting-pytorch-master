@@ -48,7 +48,7 @@ parser.add_argument('--SPATIAL_DISCOUNTING_GAMMA', type=float, default=0.9)
 parser.add_argument('--TEST_MODEL', type=str, default='20_1000')
 
 # Misc
-parser.add_argument('--MODE', type=str, default='test', choices=['train', 'test'])
+parser.add_argument('--MODE', type=str, default='train', choices=['train', 'test'])
 parser.add_argument('--USE_TENSORBOARD', type=str2bool, default=False)
 
 # Path
