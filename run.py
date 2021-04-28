@@ -275,7 +275,7 @@ class Run(object):
 
 def main(_):
 
-    cuda.set_device(args.GPU)
+    # cuda.set_device(args.GPU)
     print("Running on GPU : ", args.GPU)
     run = Run(args)
 

@@ -77,6 +77,8 @@ def get_loader(image_path, metadata_path, crop_size, image_size, batch_size, dat
     #         ])
     
     transform = transforms.Compose([
+        transforms.Resize(image_size, interpolation=Image.ANTIALIAS),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
