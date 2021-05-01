@@ -16,15 +16,18 @@ class CelebDataset(Dataset):
         self.mode = mode
         self.lines = open(metadata_path, 'r').readlines()
         self.num_data = int(self.lines[0])
+        print(self.lines[0])
+
         # self.crop_size = crop_size
 
-        print ('Start preprocessing dataset..!')
-        # random.seed(1234)
+        print('Start preprocessing dataset..!')
+        random.seed(1234)
         self.preprocess()
-        print ('Finished preprocessing dataset..!')
+        print('Finished preprocessing dataset..!')
 
         if self.mode == 'train':
             self.num_data = len(self.train_filenames)
+
         elif self.mode == 'test':
             self.num_data = len(self.test_filenames)
 
@@ -34,13 +37,13 @@ class CelebDataset(Dataset):
         self.train_ratio = 0.95
 
         lines = self.lines[2:]
-        random.shuffle(lines)   # random shuffling
+        random.shuffle(lines)  # random shuffling
         for i, line in enumerate(lines):
 
             splits = line.split()
             filename = splits[0]
 
-            if (i+1) < int(6128*self.train_ratio):
+            if (i + 1) < (6128 * self.train_ratio):
                 self.train_filenames.append(filename)
             else:
                 self.test_filenames.append(filename)
@@ -75,7 +78,7 @@ def get_loader(image_path, metadata_path, crop_size, image_size, batch_size, dat
     #         transforms.ToTensor(),
     #         # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     #         ])
-    
+
     transform = transforms.Compose([
         transforms.Resize(image_size, interpolation=Image.ANTIALIAS),
         transforms.RandomHorizontalFlip(),
@@ -94,14 +97,3 @@ def get_loader(image_path, metadata_path, crop_size, image_size, batch_size, dat
                              batch_size=batch_size,
                              shuffle=shuffle)
     return data_loader
-
-if __name__ == "__main__":
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
-    obj = CelebDataset('./data/CelebA/images', './data/list_attr_celeba.txt', transform, 'train', 1)
-    img_test = next(iter(obj))
-
-
-    print(0)

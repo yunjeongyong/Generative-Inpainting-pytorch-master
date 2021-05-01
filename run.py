@@ -10,16 +10,17 @@ import datetime
 import os
 from torchvision.utils import save_image
 
+
 class Run(object):
     def __init__(self, args):
         # Data loader
-        if args.DATASET == 'CelebA':
-            self.data_loader = get_loader(args.IMAGE_PATH, args.METADATA_PATH, 
-                                        args.CROP_SIZE, args.IMG_SIZE, 
-                                        args.BATCH_SIZE, args.DATASET, args.MODE)
+        if args.DATASET == 'CelebA':  # 데이터로더
+            self.data_loader = get_loader(args.IMAGE_PATH, args.METADATA_PATH,
+                                          args.CROP_SIZE, args.IMG_SIZE,
+                                          args.BATCH_SIZE, args.DATASET, args.MODE)
 
         # Model hyper-parameters
-        self.image_shape = args.IMG_SHAPE
+        self.image_shape = args.IMG_SHAPE  # [512, 680, 3]
 
         # Hyper-parameteres
         self.stage1_lambda_l1 = args.COARSE_L1_ALPHA
@@ -64,7 +65,7 @@ class Run(object):
         if self.pretrained_model:
             self.load_pretrained_model()
 
-    def make_dir(self):
+    def make_dir(self):  # models 폴더, samples 폴더 생성
         if not os.path.exists(self.model_save_path):
             os.makedirs(self.model_save_path)
         if not os.path.exists(self.sample_path):
@@ -105,7 +106,7 @@ class Run(object):
 
         print('loaded trained models (step: {})..!'.format(self.pretrained_model))
 
-    def train(self):   
+    def train(self):
 
         # The number of iterations per epoch
         iters_per_epoch = len(self.data_loader)
@@ -122,28 +123,28 @@ class Run(object):
         start_time = time.time()
         self.G.train()
         self.D.train()
-        for epoch in range(start, self.num_epochs):
-            for batch, real_image in enumerate(self.data_loader): # real_image : B x 3 x H x W
-                
-                batch_size = real_image.size(0)
-                real_image = 2.*real_image - 1. # [-1,1]
-                
+        for epoch in range(start, self.num_epochs):  # 100
+            for batch, real_image in enumerate(self.data_loader):  # real_image : B x 3 x H x W
+                batch_size = real_image.size(0)  # 이미지의 배치 사이즈
+                real_image = 2. * real_image - 1.  # 0~1 → -1~1 사이 값으로 바꿈
+
                 # one bbox for each batch, ( top, left, maxH, maxW )
                 # W and H will be reduced at the function bbox2mask
-                bbox = self.util.random_bbox()
-
-                binary_mask = self.util.bbox2mask(bbox)
-                inverse_mask = 1.- binary_mask
-                masked_image = real_image.clone()*inverse_mask
-
-                binary_mask = to_var(binary_mask)
-                inverse_mask = to_var(inverse_mask)
-                masked_image = to_var(masked_image)
-                real_image = to_var(real_image)
+                bbox = self.util.random_bbox()  # (0~410 중 하나, 0~680 중 하나, 102, 170)
+                binary_mask = self.util.bbox2mask(bbox, real_image)  # (0~410 중 하나, 0~680 중 하나, 102, 170) → tensor로 변경
+                # binary_mask.repeat(1, 3, 1, 1)
+                inverse_mask = 1. - binary_mask  # 1 → 0, 0 → 1로 변경
+                print(real_image.shape)
+                print(inverse_mask.shape)
+                masked_image = real_image.clone() * inverse_mask  # 원본 이미지 * inverse_mask
+                binary_mask = to_var(binary_mask)  # 변수로 변경 : 다양한 숫자의 값으로 되어있는 마스크
+                inverse_mask = to_var(inverse_mask)  # 변수로 변경 : 0과 1로만 되어있는 마스크
+                masked_image = to_var(masked_image)  # 변수로 변경 : 지워진 이미지
+                real_image = to_var(real_image)  # 변수로 변경 : 원본 이미지
 
                 stage_1, stage_2, offset_flow = self.G(masked_image, binary_mask)
-                
-                fake_image = stage_2*binary_mask + masked_image*inverse_mask # mask_location: generated, around_mask: ground_truth
+
+                fake_image = stage_2 * binary_mask + masked_image * inverse_mask  # mask_location: generated, around_mask: ground_truth
 
                 real_patch = self.util.local_patch(real_image, bbox)
                 stage_1_patch = self.util.local_patch(stage_1, bbox)
@@ -152,14 +153,18 @@ class Run(object):
                 fake_patch = self.util.local_patch(fake_image, bbox)
 
                 l1_alpha = self.stage1_lambda_l1
-                self.loss['recon'] = l1_alpha * self.L1(stage_1_patch, real_patch) # Coarse Network reconstruction loss
-                self.loss['recon'] = self.loss['recon'] + self.L1(stage_2_patch, real_patch) # Refinement Network reconstruction loss
-                
-                self.loss['ae_loss'] = l1_alpha * self.torch_L1(stage_1*inverse_mask, real_image*inverse_mask) # recon loss except mask
-                self.loss['ae_loss'] = self.loss['ae_loss'] + self.torch_L1(stage_2*inverse_mask, real_image*inverse_mask) # recon loss except mask
-                self.loss['ae_loss'] = self.loss['ae_loss'] / torch.mean(torch.mean(inverse_mask, dim=3), dim=2) # 1 x 1 tensor
+                self.loss['recon'] = l1_alpha * self.L1(stage_1_patch, real_patch)  # Coarse Network reconstruction loss
+                self.loss['recon'] = self.loss['recon'] + self.L1(stage_2_patch,
+                                                                  real_patch)  # Refinement Network reconstruction loss
 
-                if (batch+1) % self.d_train_repeat == 0:
+                self.loss['ae_loss'] = l1_alpha * self.torch_L1(stage_1 * inverse_mask,
+                                                                real_image * inverse_mask)  # recon loss except mask
+                self.loss['ae_loss'] = self.loss['ae_loss'] + self.torch_L1(stage_2 * inverse_mask,
+                                                                            real_image * inverse_mask)  # recon loss except mask
+                self.loss['ae_loss'] = self.loss['ae_loss'] / torch.mean(torch.mean(inverse_mask, dim=3),
+                                                                         dim=2)  # 1 x 1 tensor
+
+                if (batch + 1) % self.d_train_repeat == 0:
                     global_real_fake_image = torch.cat([real_image, fake_image], dim=0)
                     local_real_fake_image = torch.cat([real_patch, fake_patch], dim=0)
                 else:
@@ -177,12 +182,12 @@ class Run(object):
                 self.loss['g_loss'] = self.global_wgan_loss_alpha * (global_G_loss + local_G_loss)
                 self.loss['d_loss'] = global_D_loss + local_D_loss
 
-                if (batch+1) % self.d_train_repeat == 0:
+                if (batch + 1) % self.d_train_repeat == 0:
                     # gradient penalty
-                    global_interpolate = self.random_interpolates(real_image, fake_image) 
+                    global_interpolate = self.random_interpolates(real_image, fake_image)
                     local_interpolate = self.random_interpolates(real_patch, fake_patch)
                 else:
-                    global_interpolate = self.random_interpolates(real_image, fake_image.clone()) 
+                    global_interpolate = self.random_interpolates(real_image, fake_image.clone())
                     local_interpolate = self.random_interpolates(real_patch, fake_patch.clone())
 
                 global_gp_vector, local_gp_vector = self.D(global_interpolate, local_interpolate)
@@ -193,15 +198,15 @@ class Run(object):
                 self.loss['gp_loss'] = self.wgan_gp_lambda * (local_penalty + global_penalty)
                 self.loss['d_loss'] = self.loss['d_loss'] + self.loss['gp_loss']
 
-                if (batch+1) % self.d_train_repeat == 0:             
+                if (batch + 1) % self.d_train_repeat == 0:
                     self.loss['g_loss'] = self.gan_loss_alpha * self.loss['g_loss']
-                    self.loss['g_loss'] = self.loss['g_loss'] + self.l1_loss_alpha * self.loss['recon'] + self.ae_loss_alpha * self.loss['ae_loss']
-                    self.backprop(D=True,G=True)
+                    self.loss['g_loss'] = self.loss['g_loss'] + self.l1_loss_alpha * self.loss[
+                        'recon'] + self.ae_loss_alpha * self.loss['ae_loss']
+                    self.backprop(D=True, G=True)
 
-                else:                  
+                else:
                     self.loss['g_loss'] = to_var(torch.FloatTensor([0]))
-                    self.backprop(D=True,G=False)
-
+                    self.backprop(D=True, G=False)
 
                 if batch % self.print_every == 0:
                     elapsed = time.time() - start_time
@@ -209,25 +214,28 @@ class Run(object):
 
                     print('=====================================================')
                     print("Elapsed [{}], Epoch [{}/{}], Iter [{}/{}]".format(
-                        elapsed, epoch+1, self.num_epochs, batch+1, iters_per_epoch))
+                        elapsed, epoch + 1, self.num_epochs, batch + 1, iters_per_epoch))
                     print('=====================================================')
                     print('reconstruction loss: ', self.loss['recon'].data[0])
                     print('ae loss: ', self.loss['ae_loss'].data[0][0])
                     print('g loss: ', self.loss['g_loss'].data[0])
                     print('d loss: ', self.loss['d_loss'].item())
-                    show_image(real_image, (masked_image+binary_mask), stage_1, stage_2, fake_image, offset_flow)
+                    show_image(real_image, (masked_image + binary_mask), stage_1, stage_2, fake_image, offset_flow)
 
                 # Save model checkpoints
                 if batch % self.model_save_step == 0:
                     torch.save(self.G.state_dict(),
-                        os.path.join(self.model_save_path, 'G_{}_L1_{}.pth'.format(epoch+1, self.l1_loss_alpha)))
+                               os.path.join(self.model_save_path,
+                                            'G_{}_L1_{}.pth'.format(epoch + 1, self.l1_loss_alpha)))
                     torch.save(self.D.state_dict(),
-                        os.path.join(self.model_save_path, 'D_{}_L1_{}.pth'.format(epoch+1, self.l1_loss_alpha)))
+                               os.path.join(self.model_save_path,
+                                            'D_{}_L1_{}.pth'.format(epoch + 1, self.l1_loss_alpha)))
 
                 # Save sample image
                 if batch % self.sample_step == 0:
                     save_image(self.denorm(fake_image.clone().data.cpu()),
-                        os.path.join(self.sample_path, '{}_{}_fake.png'.format(epoch+1, batch+1)),nrow=1, padding=0)
+                               os.path.join(self.sample_path, '{}_{}_fake.png'.format(epoch + 1, batch + 1)), nrow=1,
+                               padding=0)
                     print('Translated images and saved into {}..!'.format(self.sample_path))
 
     def backprop(self, D=True, G=True):
@@ -252,7 +260,7 @@ class Run(object):
         fake = fake.contiguous().view(shape[0], -1, 1, 1)
         if alpha is None:
             alpha = Variable(torch.rand(shape[0], 1, 1, 1)).cuda()
-        interpolates = fake + alpha*(real - fake)
+        interpolates = fake + alpha * (real - fake)
         return interpolates.view(shape)
 
     def gradient_penalty(self, x, y, mask=None, norm=1.):
@@ -266,16 +274,16 @@ class Run(object):
                                    only_inputs=True)[0]
         dydx = dydx * mask
         dydx = dydx.view(dydx.size(0), -1)
-        dydx_l2norm = torch.sqrt(torch.sum(dydx**2, dim=1))
-        return torch.mean((dydx_l2norm-1)**2)
+        dydx_l2norm = torch.sqrt(torch.sum(dydx ** 2, dim=1))
+        return torch.mean((dydx_l2norm - 1) ** 2)
 
     def denorm(self, x):
         out = (x + 1) / 2
         return out.clamp_(0, 1)
 
-def main(_):
 
-    # cuda.set_device(args.GPU)
+def main(_):
+    cuda.set_device(args.GPU)
     print("Running on GPU : ", args.GPU)
     run = Run(args)
 
@@ -283,5 +291,6 @@ def main(_):
         run.train()
     else:
         run.test()
+
 
 main(args)

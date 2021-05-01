@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import cv2 as cv
 
-
 class Util(object):
     def __init__(self, args):
         self.args = args
@@ -22,20 +21,20 @@ class Util(object):
         print("The number of parameters: {}".format(num_params))
 
     def random_bbox(self):
-        img_shape = self.args.IMG_SHAPE
-        img_height = img_shape[0]
-        img_width = img_shape[1]
+        img_shape = self.args.IMG_SHAPE                                       # [512, 680, 3]
+        img_height = img_shape[0]                                             # 512
+        img_width = img_shape[1]                                              # 680
 
-        maxt = img_height - self.args.VERTICAL_MARGIN - self.args.MASK_HEIGHT
-        maxl = img_width - self.args.HORIZONTAL_MARGIN - self.args.MASK_WIDTH
+        maxt = img_height - self.args.VERTICAL_MARGIN - self.args.MASK_HEIGHT # 512 - 0 - 102 = 410
+        maxl = img_width - self.args.HORIZONTAL_MARGIN - self.args.MASK_WIDTH # 680 - 0 - 170 = 510
 
-        t = randint(self.args.VERTICAL_MARGIN, maxt)
-        l = randint(self.args.HORIZONTAL_MARGIN, maxl)
-        h = self.args.MASK_HEIGHT
-        w = self.args.MASK_WIDTH
-        return (t, l, h, w)
+        t = randint(self.args.VERTICAL_MARGIN, maxt)                          # 0~410 중 랜덤한 숫자 반환
+        l = randint(self.args.HORIZONTAL_MARGIN, maxl)                        # 0~680 중 랜덤한 숫자 반환
+        h = self.args.MASK_HEIGHT                                             # 102
+        w = self.args.MASK_WIDTH                                              # 170
+        return (t, l, h, w)                                                   # (0~410 중 하나, 0~680 중 하나, 102, 170)
 
-    def bbox2mask(self, bbox):
+    def bbox2mask(self, bbox, in_image):                                                # bbox : (0~410 중 하나, 0~680 중 하나, 102, 170)
         """Generate mask tensor from bbox.
 
         Args:
@@ -56,27 +55,27 @@ class Util(object):
         #          bbox[1]+w : bbox[1]+bbox[3]-w] = 1.
         #     return mask
 
-        def npmask(h, w):
-            max_width = 48
-            if h > 256 or w > 256:
+        def npmask(h, w):                                                       # 102,170
+            max_width = 128
+            if h > 512 or w > 680:                                              # h, w가 너무 크면 에러 발생
                 raise Exception("width and height of mask be at least 680x512!")
-            np.random.seed(1)  ## maskseed = 22, 100 for test
-            number = np.random.randint(16, 30)
-            mask = np.zeros((h, w))
+            np.random.seed(0)  ## maskseed = 22, 100 for test
+            number = np.random.randint(16, 30)                                  # 16~30 랜덤한 정수값
+            mask = np.zeros((h, w))                                             # 0으로 가득찬 (512, 680) 크기 마스크 생성
             for _ in range(number):
-                model = np.random.random()
-                if model < 0.6:  # Draw random lines
+                model = np.random.random()                                      # 0~1 사이값
+                if model < 0.6:                                                 # Draw random lines
                     x1, x2 = np.random.randint(1, h), np.random.randint(1, h)
                     y1, y2 = np.random.randint(1, w), np.random.randint(1, w)
                     thickness = np.random.randint(4, max_width)
                     cv.line(mask, (x1, y1), (x2, y2), (1, 1, 1), thickness)
 
-                elif model >= 0.6 and model < 0.8:  # Draw random circle
+                elif model >= 0.6 and model < 0.8:                              # Draw random circle
                     x1, y1 = np.random.randint(1, h), np.random.randint(1, w)
                     radius = np.random.randint(4, max_width)
                     cv.circle(mask, (x1, y1), radius, (1, 1, 1), -1)
 
-                else:  # Draw random ellipses
+                else:                                                           # Draw random ellipses
                     x1, y1 = np.random.randint(1, h), np.random.randint(1, w)
                     s1, s2 = np.random.randint(1, h), np.random.randint(1, w)
                     a1 = np.random.randint(3, 180)
@@ -84,18 +83,15 @@ class Util(object):
                     a3 = np.random.randint(3, 180)
                     thickness = np.random.randint(4, max_width)
                     cv.ellipse(mask, (x1, y1), (s1, s2), a1, a2, a3, (1, 1, 1), thickness)
-            mask4d = np.zeros((1, 1, h, w), np.float32)
-            mask4d[0][0] = mask
+            mask4d = np.zeros((2, 3, h, w), np.float32)                         # 0으로 가득찬 (1, 1, 512, 680) 크기 마스크 생성
+            mask4d[0][0] = mask                                                 #
             return mask4d
 
-        img_shape = self.args.IMG_SHAPE
-        height = img_shape[0]
-        width = img_shape[1]
-
-        # mask = npmask(bbox, height, width,
-        #                 self.args.MAX_DELTA_HEIGHT,
-        #                 self.args.MAX_DELTA_WIDTH)
-        mask = npmask(height, width)
+        img_shape = self.args.IMG_SHAPE                                         # [512, 680, 3]
+        height = img_shape[0]                                                   # 512
+        width = img_shape[1]                                                    # 680
+        # mask = npmask(bbox, height, width, self.args.MAX_DELTA_HEIGHT, self.args.MAX_DELTA_WIDTH) # ((0~410 중 하나, 0~680 중 하나, 102, 170), 512, 680, 64, 64)
+        mask = npmask(in_image.shape[2], in_image.shape[3])
 
         return torch.FloatTensor(mask)
 
